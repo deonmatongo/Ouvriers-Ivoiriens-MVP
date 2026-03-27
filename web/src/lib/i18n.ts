@@ -175,6 +175,31 @@ export const translations = {
     onboardingFooter: 'Votre profil sera examiné par notre équipe avant d\'être mis en ligne.',
     validationError: 'Erreur de validation',
 
+    // Browse artisans (client)
+    navBrowse: 'Parcourir',
+    browseArtisansTitle: 'Parcourir les artisans',
+    browseArtisansSub: 'Trouvez et contactez des artisans vérifiés près de chez vous',
+    contactArtisan: 'Contacter',
+    allCategories: 'Toutes catégories',
+    perHour: '/h',
+    experienceLabel: "d'exp.",
+    reviewsLabel: 'avis',
+
+    // Browse jobs (worker)
+    navBrowseJobs: 'Offres clients',
+    navWorkerMessages: 'Messages',
+    browseJobsTitle: 'Demandes clients',
+    browseJobsSub: 'Consultez les offres publiées et contactez directement les clients',
+    contactClient: 'Contacter le client',
+    budgetLabel2: 'Budget',
+    postedLabel: 'Publié',
+
+    // Shared chat
+    startConversation: 'Nouvelle conversation avec',
+    typeFirstMessage: 'Commencez la conversation...',
+    noConversations: 'Aucune conversation',
+    noConversationsSub: "Parcourez les artisans ou les offres pour contacter quelqu'un",
+
     // Landing page
     landingNav_features: 'Fonctionnalités',
     landingNav_howItWorks: 'Comment ça marche',
@@ -418,6 +443,31 @@ export const translations = {
     finishOnboarding: 'Complete registration',
     onboardingFooter: 'Your profile will be reviewed by our team before going live.',
     validationError: 'Validation error',
+
+    // Browse artisans (client)
+    navBrowse: 'Browse',
+    browseArtisansTitle: 'Browse Artisans',
+    browseArtisansSub: 'Find and contact verified artisans near you',
+    contactArtisan: 'Contact',
+    allCategories: 'All categories',
+    perHour: '/hr',
+    experienceLabel: 'exp.',
+    reviewsLabel: 'reviews',
+
+    // Browse jobs (worker)
+    navBrowseJobs: 'Client Jobs',
+    navWorkerMessages: 'Messages',
+    browseJobsTitle: 'Client Requests',
+    browseJobsSub: 'Browse open job requests and contact clients directly',
+    contactClient: 'Contact Client',
+    budgetLabel2: 'Budget',
+    postedLabel: 'Posted',
+
+    // Shared chat
+    startConversation: 'New conversation with',
+    typeFirstMessage: 'Start the conversation...',
+    noConversations: 'No conversations',
+    noConversationsSub: 'Browse artisans or job listings to contact someone',
 
     // Landing page
     landingNav_features: 'Features',

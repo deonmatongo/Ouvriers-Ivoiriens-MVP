@@ -1,7 +1,7 @@
 import { type ReactNode, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Briefcase, MessageSquare, PlusCircle,
+  LayoutDashboard, Briefcase, MessageSquare, PlusCircle, Search,
   LogOut, Menu, X, Bell, ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -16,6 +16,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
   const nav = [
     { to: '/dashboard/customer', icon: LayoutDashboard, label: t('navDashboard') },
     { to: '/dashboard/customer/jobs', icon: Briefcase, label: t('navMyJobs') },
+    { to: '/dashboard/customer/browse', icon: Search, label: t('navBrowse') },
     { to: '/post-job', icon: PlusCircle, label: t('navNewJob') },
     { to: '/messages', icon: MessageSquare, label: t('navMessages') },
   ];

@@ -1,7 +1,7 @@
 import { type ReactNode, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, User, Wrench, Star,
+  LayoutDashboard, User, Wrench, Star, Search, MessageSquare,
   LogOut, Menu, X, Bell, ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -17,6 +17,8 @@ export function WorkerLayout({ children }: { children: ReactNode }) {
     { to: '/dashboard/worker', icon: LayoutDashboard, label: t('navDashboard') },
     { to: '/dashboard/worker/profile', icon: User, label: t('navMyProfile') },
     { to: '/dashboard/worker/services', icon: Wrench, label: t('navMyServices') },
+    { to: '/dashboard/worker/browse', icon: Search, label: t('navBrowseJobs') },
+    { to: '/dashboard/worker/messages', icon: MessageSquare, label: t('navWorkerMessages') },
     { to: '/dashboard/worker/reviews', icon: Star, label: t('navReviews') },
   ];
 

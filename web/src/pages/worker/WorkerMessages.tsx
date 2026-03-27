@@ -1,38 +1,43 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Send, MessageSquare } from 'lucide-react';
-import { CustomerLayout } from '../../components/layout/CustomerLayout';
+import { WorkerLayout } from '../../components/layout/WorkerLayout';
 import { useLang } from '../../context/LangContext';
 import { useToast } from '../../components/ui/Toast';
 import { useConversations, useThread, useSendMessage } from '../../hooks/useMessages';
 import { useAuth } from '../../context/AuthContext';
 import { Skeleton } from '../../components/ui/Skeleton';
-import { EmptyState } from '../../components/ui/EmptyState';
 import type { Conversation } from '../../types';
 
-interface PendingContact { id: string; name: string; }
+interface PendingContact {
+  id: string;
+  name: string;
+}
 
-function buildPending(c: PendingContact): Conversation {
+function buildPendingConversation(contact: PendingContact, jobTitle?: string): Conversation {
   const now = new Date().toISOString();
+  const rid = `pending-${contact.id}`;
   return {
-    request_id: `pending-${c.id}`,
-    user: { id: c.id, name: c.name, email: '', phone_verified: false, role: 'artisan', created_at: now },
-    last_message: { id: '', sender_id: '', receiver_id: '', request_id: `pending-${c.id}`, content: '...', is_read: true, sent_at: now },
+    request_id: rid,
+    user: { id: contact.id, name: contact.name, email: '', phone_verified: false, role: 'client', created_at: now },
+    last_message: { id: '', sender_id: '', receiver_id: '', request_id: rid, content: jobTitle ? `Re: ${jobTitle}` : '...', is_read: true, sent_at: now },
     unread_count: 0,
   };
 }
 
-export function Messages() {
+export function WorkerMessages() {
   const { t } = useLang();
   const { user } = useAuth();
   const toast = useToast();
   const location = useLocation();
 
   const pendingContact: PendingContact | undefined = location.state?.pendingContact;
+  const jobTitle: string | undefined = location.state?.jobTitle;
 
   const { data: apiConversations = [], isLoading: convLoading } = useConversations();
+
   const allConversations: Conversation[] = pendingContact
-    ? [buildPending(pendingContact), ...apiConversations]
+    ? [buildPendingConversation(pendingContact, jobTitle), ...apiConversations]
     : apiConversations;
 
   const [active, setActive] = useState<Conversation | null>(null);
@@ -45,11 +50,12 @@ export function Messages() {
 
   // Auto-select pending or first conversation
   useEffect(() => {
-    if (allConversations.length > 0 && !active) setActive(allConversations[0]);
+    if (allConversations.length > 0 && !active) {
+      setActive(allConversations[0]);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [convLoading]);
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -60,6 +66,7 @@ export function Messages() {
     setInput('');
 
     if (isPending) {
+      // When backend is live, this will create a real thread; for now just clear input
       toast.info('Message ready to send once backend is connected');
       return;
     }
@@ -77,8 +84,8 @@ export function Messages() {
   };
 
   return (
-    <CustomerLayout>
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('messagesTitle')}</h1>
+    <WorkerLayout>
+      <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('navWorkerMessages')}</h1>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex h-[calc(100vh-200px)]">
         {/* Conversation list */}
@@ -89,6 +96,7 @@ export function Messages() {
               className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
+
           <div className="flex-1 overflow-y-auto">
             {convLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
@@ -137,7 +145,10 @@ export function Messages() {
         {/* Chat area */}
         {!active ? (
           <div className="flex-1 flex items-center justify-center">
-            <EmptyState icon={MessageSquare} title={t('noConversations')} description={t('noConversationsSub')} />
+            <div className="text-center">
+              <MessageSquare size={40} className="text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-400 text-sm">{t('noConversationsSub')}</p>
+            </div>
           </div>
         ) : (
           <div className="flex-1 flex flex-col">
@@ -148,10 +159,11 @@ export function Messages() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-900">{active.user.name}</p>
-                {isPending
-                  ? <p className="text-xs text-primary-500">{t('startConversation')}</p>
-                  : <p className="text-xs text-green-500">{t('online')}</p>
-                }
+                {isPending && jobTitle ? (
+                  <p className="text-xs text-primary-500">{t('startConversation')} • {jobTitle}</p>
+                ) : (
+                  <p className="text-xs text-green-500">{t('online')}</p>
+                )}
               </div>
             </div>
 
@@ -162,25 +174,27 @@ export function Messages() {
                   <MessageSquare size={32} className="text-gray-200 mx-auto mb-3" />
                   <p className="text-sm text-gray-400">{t('typeFirstMessage')}</p>
                 </div>
-              ) : msgLoading
-                ? Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className={`flex ${i % 2 === 0 ? 'justify-start' : 'justify-end'}`}>
-                      <Skeleton className={`h-10 rounded-2xl ${i % 2 === 0 ? 'w-48' : 'w-36'}`} />
-                    </div>
-                  ))
-                : messages.map((m) => {
-                    const isMe = m.sender_id === user?.id;
-                    return (
-                      <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm ${isMe ? 'bg-primary-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-900 rounded-bl-sm'}`}>
-                          <p>{m.content}</p>
-                          <p className={`text-xs mt-1 ${isMe ? 'text-primary-200' : 'text-gray-400'}`}>
-                            {new Date(m.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </div>
+              ) : msgLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className={`flex ${i % 2 === 0 ? 'justify-start' : 'justify-end'}`}>
+                    <Skeleton className={`h-10 rounded-2xl ${i % 2 === 0 ? 'w-48' : 'w-36'}`} />
+                  </div>
+                ))
+              ) : (
+                messages.map((m) => {
+                  const isMe = m.sender_id === user?.id;
+                  return (
+                    <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm ${isMe ? 'bg-primary-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-900 rounded-bl-sm'}`}>
+                        <p>{m.content}</p>
+                        <p className={`text-xs mt-1 ${isMe ? 'text-primary-200' : 'text-gray-400'}`}>
+                          {new Date(m.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
                       </div>
-                    );
-                  })}
+                    </div>
+                  );
+                })
+              )}
               <div ref={bottomRef} />
             </div>
 
@@ -204,6 +218,6 @@ export function Messages() {
           </div>
         )}
       </div>
-    </CustomerLayout>
+    </WorkerLayout>
   );
 }
