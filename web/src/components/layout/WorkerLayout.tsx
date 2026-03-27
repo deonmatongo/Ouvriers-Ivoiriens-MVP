@@ -1,15 +1,17 @@
 import { type ReactNode, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, User, Wrench, Star, Search, MessageSquare,
+  LayoutDashboard, User, Wrench, Star, Search, MessageSquare, Coins,
   LogOut, Menu, X, Bell, ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LangContext';
+import { useTokens } from '../../context/TokenContext';
 
 export function WorkerLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const { t, locale, toggle } = useLang();
+  const { balance } = useTokens();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
@@ -20,6 +22,7 @@ export function WorkerLayout({ children }: { children: ReactNode }) {
     { to: '/dashboard/worker/browse', icon: Search, label: t('navBrowseJobs') },
     { to: '/dashboard/worker/messages', icon: MessageSquare, label: t('navWorkerMessages') },
     { to: '/dashboard/worker/reviews', icon: Star, label: t('navReviews') },
+    { to: '/dashboard/worker/credits', icon: Coins, label: t('navCredits') },
   ];
 
   const handleLogout = () => { logout(); navigate('/login'); };
@@ -54,6 +57,18 @@ export function WorkerLayout({ children }: { children: ReactNode }) {
       </nav>
 
       <div className="px-3 py-4 border-t border-gray-800">
+        {/* Token balance chip */}
+        <NavLink
+          to="/dashboard/worker/credits"
+          className="flex items-center justify-between px-3 py-2 mb-3 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Coins size={15} className={balance > 0 ? 'text-yellow-400' : 'text-gray-500'} />
+            <span className="text-xs text-gray-300">{t('creditsUnit')}</span>
+          </div>
+          <span className={`text-sm font-bold ${balance > 0 ? 'text-yellow-400' : 'text-red-400'}`}>{balance}</span>
+        </NavLink>
+
         <div className="flex items-center gap-3 px-3 py-2 mb-1">
           <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-semibold text-sm">
             {user?.name?.[0]?.toUpperCase()}

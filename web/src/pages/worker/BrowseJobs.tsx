@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, DollarSign, Calendar, MessageSquare, Briefcase } from 'lucide-react';
+import { Search, MapPin, DollarSign, Calendar, MessageSquare, Briefcase, Coins, X } from 'lucide-react';
 import { WorkerLayout } from '../../components/layout/WorkerLayout';
 import { useLang } from '../../context/LangContext';
+import { useTokens } from '../../context/TokenContext';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { formatCurrency } from '../../lib/utils';
@@ -116,12 +117,48 @@ function timeAgo(iso: string, locale: string): string {
   return `${mins}min ago`;
 }
 
+const CONTACT_COST = 1;
+
+function InsufficientModal({ onClose, onBuy, locale }: { onClose: () => void; onBuy: () => void; locale: string }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Coins size={20} className="text-primary-600" />
+            <h3 className="font-semibold text-gray-900">
+              {locale === 'fr' ? 'Crédits insuffisants' : 'Insufficient credits'}
+            </h3>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+        </div>
+        <p className="text-sm text-gray-500 mb-6">
+          {locale === 'fr'
+            ? `Vous avez besoin d'au moins ${CONTACT_COST} crédit pour contacter un client. Achetez des crédits pour continuer.`
+            : `You need at least ${CONTACT_COST} credit to contact a client. Buy credits to continue.`
+          }
+        </p>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={onClose} className="flex-1">
+            {locale === 'fr' ? 'Annuler' : 'Cancel'}
+          </Button>
+          <Button onClick={onBuy} className="flex-1">
+            {locale === 'fr' ? 'Acheter des crédits' : 'Buy credits'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function BrowseJobs() {
   const { t, locale } = useLang();
   const navigate = useNavigate();
+  const { balance, deduct } = useTokens();
 
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
+  const [showModal, setShowModal] = useState(false);
 
   const filtered = MOCK_JOBS.filter((j) => {
     const q = search.toLowerCase();
@@ -131,6 +168,12 @@ export function BrowseJobs() {
   });
 
   const handleContact = (job: MockJob) => {
+    if (balance < CONTACT_COST) {
+      setShowModal(true);
+      return;
+    }
+    const ok = deduct(CONTACT_COST, `Contact client — ${job.title}`);
+    if (!ok) { setShowModal(true); return; }
     navigate('/dashboard/worker/messages', {
       state: {
         pendingContact: { id: job.client.id, name: job.client.name },
@@ -141,9 +184,28 @@ export function BrowseJobs() {
 
   return (
     <WorkerLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t('browseJobsTitle')}</h1>
-        <p className="text-gray-500 text-sm mt-1">{t('browseJobsSub')}</p>
+      {showModal && (
+        <InsufficientModal
+          locale={locale}
+          onClose={() => setShowModal(false)}
+          onBuy={() => navigate('/dashboard/worker/credits')}
+        />
+      )}
+
+      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{t('browseJobsTitle')}</h1>
+          <p className="text-gray-500 text-sm mt-1">{t('browseJobsSub')}</p>
+        </div>
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold ${balance > 0 ? 'bg-primary-50 text-primary-700' : 'bg-red-50 text-red-600'}`}>
+          <Coins size={16} />
+          {balance} {t('creditsUnit')}
+          {balance === 0 && (
+            <button onClick={() => navigate('/dashboard/worker/credits')} className="ml-1 underline text-xs font-normal">
+              {t('buyCreditsNow')}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -219,9 +281,13 @@ export function BrowseJobs() {
                     size="sm"
                     onClick={() => handleContact(job)}
                     className="flex items-center gap-1.5 whitespace-nowrap"
+                    variant={balance < CONTACT_COST ? 'outline' : 'primary'}
                   >
                     <MessageSquare size={14} />
                     {t('contactClient')}
+                    <span className="ml-1 flex items-center gap-0.5 text-xs opacity-75">
+                      <Coins size={11} />1
+                    </span>
                   </Button>
                 </div>
               </div>

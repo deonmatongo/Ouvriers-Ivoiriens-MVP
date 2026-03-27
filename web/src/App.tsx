@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { LangProvider } from './context/LangContext';
+import { TokenProvider } from './context/TokenContext';
 import { ToastProvider } from './components/ui/Toast';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
@@ -27,12 +28,14 @@ import { WorkerServices } from './pages/worker/Services';
 import { WorkerReviews } from './pages/worker/Reviews';
 import { BrowseJobs } from './pages/worker/BrowseJobs';
 import { WorkerMessages } from './pages/worker/WorkerMessages';
+import { Credits } from './pages/worker/Credits';
 import { Onboarding } from './pages/worker/onboarding/Onboarding';
 
 function App() {
   return (
     <LangProvider>
       <AuthProvider>
+        <TokenProvider>
         <ToastProvider>
           <BrowserRouter>
             <Routes>
@@ -74,6 +77,7 @@ function App() {
               <Route path="/dashboard/worker/services" element={<ProtectedRoute roles={['artisan']}><WorkerServices /></ProtectedRoute>} />
               <Route path="/dashboard/worker/browse" element={<ProtectedRoute roles={['artisan']}><BrowseJobs /></ProtectedRoute>} />
               <Route path="/dashboard/worker/messages" element={<ProtectedRoute roles={['artisan']}><WorkerMessages /></ProtectedRoute>} />
+              <Route path="/dashboard/worker/credits" element={<ProtectedRoute roles={['artisan']}><Credits /></ProtectedRoute>} />
               <Route path="/dashboard/worker/reviews" element={<ProtectedRoute roles={['artisan']}><WorkerReviews /></ProtectedRoute>} />
 
               {/* Default */}
@@ -82,6 +86,7 @@ function App() {
             </Routes>
           </BrowserRouter>
         </ToastProvider>
+        </TokenProvider>
       </AuthProvider>
     </LangProvider>
   );
