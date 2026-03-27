@@ -5,7 +5,10 @@ interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  phone_verified?: boolean;
   role: 'client' | 'artisan' | 'admin';
+  avatar_url?: string;
 }
 
 interface AuthContextType {

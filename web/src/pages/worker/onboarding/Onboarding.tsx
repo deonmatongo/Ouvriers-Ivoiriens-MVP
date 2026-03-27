@@ -6,6 +6,8 @@ import { Select } from '../../../components/ui/Select';
 import { Button } from '../../../components/ui/Button';
 import { Card, CardBody, CardHeader } from '../../../components/ui/Card';
 import { useLang } from '../../../context/LangContext';
+import { useToast } from '../../../components/ui/Toast';
+import { useUpsertProfile } from '../../../hooks/useArtisanProfile';
 import { cn } from '../../../lib/utils';
 
 const categories = [
@@ -38,7 +40,7 @@ function Step2({ data, setData, t, locale }: { data: Record<string, string>; set
   const [input, setInput] = useState('');
 
   const addSkill = () => {
-    if (!input.trim()) return;
+    if (!input.trim() || skills.includes(input.trim())) return;
     const updated = [...skills, input.trim()];
     setSkills(updated);
     setData({ ...data, skills: updated.join(',') });
@@ -56,7 +58,8 @@ function Step2({ data, setData, t, locale }: { data: Record<string, string>; set
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium text-gray-700">{t('skillsLabel')}</label>
         <div className="flex gap-2">
-          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+          <input value={input} onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
             placeholder={t('skillsPlaceholder')}
             className="flex-1 rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
           <Button type="button" variant="secondary" onClick={addSkill}>{t('addSkill')}</Button>
@@ -66,7 +69,7 @@ function Step2({ data, setData, t, locale }: { data: Record<string, string>; set
             {skills.map((s) => (
               <span key={s} className="flex items-center gap-1 px-2.5 py-1 bg-primary-50 text-primary-700 text-xs rounded-full">
                 {s}
-                <button onClick={() => { const u = skills.filter((x) => x !== s); setSkills(u); setData({ ...data, skills: u.join(',') }); }} className="ml-1 text-primary-400 hover:text-primary-700">×</button>
+                <button type="button" onClick={() => { const u = skills.filter((x) => x !== s); setSkills(u); setData({ ...data, skills: u.join(',') }); }}>×</button>
               </span>
             ))}
           </div>
@@ -90,13 +93,22 @@ function Step3({ data, setData, t }: { data: Record<string, string>; setData: (d
 }
 
 function Step4({ t }: { t: (k: string) => string }) {
+  const [files, setFiles] = useState<File[]>([]);
   return (
     <div className="space-y-4">
-      <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary-400 transition-colors cursor-pointer">
+      <label className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary-400 transition-colors cursor-pointer block">
         <Image size={32} className="text-gray-300 mx-auto mb-3" />
         <p className="text-sm font-medium text-gray-700">{t('uploadLabel')}</p>
         <p className="text-xs text-gray-400 mt-1">{t('uploadSub')}</p>
-      </div>
+        <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => setFiles(Array.from(e.target.files || []))} />
+      </label>
+      {files.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {files.map((f) => (
+            <span key={f.name} className="text-xs bg-gray-100 px-2 py-1 rounded">{f.name}</span>
+          ))}
+        </div>
+      )}
       <p className="text-xs text-gray-500 text-center">{t('uploadHint')}</p>
     </div>
   );
@@ -104,10 +116,12 @@ function Step4({ t }: { t: (k: string) => string }) {
 
 export function Onboarding() {
   const { t, locale } = useLang();
+  const toast = useToast();
+  const navigate = useNavigate();
+  const upsert = useUpsertProfile();
+
   const [step, setStep] = useState(0);
   const [data, setData] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const navigate = useNavigate();
 
   const steps = [
     { label: t('onboardingStep1'), icon: User },
@@ -119,13 +133,21 @@ export function Onboarding() {
   const isLast = step === steps.length - 1;
 
   const handleNext = async () => {
-    if (isLast) {
-      setSubmitting(true);
-      await new Promise((r) => setTimeout(r, 800));
+    if (!isLast) { setStep((s) => s + 1); return; }
+
+    try {
+      await upsert.mutateAsync({
+        bio: data.bio,
+        category: data.category,
+        hourly_rate: data.hourly_rate ? Number(data.hourly_rate) : undefined,
+        experience_years: data.experience_years ? Number(data.experience_years) : undefined,
+        skills: data.skills ? data.skills.split(',').filter(Boolean) : [],
+      });
+      toast.success(locale === 'fr' ? 'Profil créé avec succès' : 'Profile created successfully');
       navigate('/dashboard/worker');
-      return;
+    } catch {
+      toast.error(locale === 'fr' ? 'Erreur lors de la création du profil' : 'Failed to create profile');
     }
-    setStep((s) => s + 1);
   };
 
   const stepContent = [
@@ -145,6 +167,7 @@ export function Onboarding() {
           <span className="font-semibold text-gray-900 text-lg">Ouvriers Ivoiriens</span>
         </div>
 
+        {/* Steps */}
         <div className="flex items-center justify-center gap-0 mb-8">
           {steps.map((_s, i) => {
             const done = i < step;
@@ -164,16 +187,18 @@ export function Onboarding() {
         <Card>
           <CardHeader>
             <h2 className="font-semibold text-gray-900">
-              {t('onboardingStepOf') === 'of'
+              {locale === 'en'
                 ? `Step ${step + 1} of ${steps.length} — ${steps[step].label}`
-                : `Étape ${step + 1} ${t('onboardingStepOf')} ${steps.length} — ${steps[step].label}`}
+                : `Étape ${step + 1} sur ${steps.length} — ${steps[step].label}`}
             </h2>
           </CardHeader>
           <CardBody className="space-y-4">
             {stepContent[step]}
             <div className="flex gap-3 pt-2">
-              {step > 0 && <Button variant="outline" onClick={() => setStep((s) => s - 1)} className="flex-1">{t('back')}</Button>}
-              <Button onClick={handleNext} loading={submitting} className="flex-1">
+              {step > 0 && (
+                <Button variant="outline" onClick={() => setStep((s) => s - 1)} className="flex-1">{t('back')}</Button>
+              )}
+              <Button onClick={handleNext} loading={upsert.isPending && isLast} className="flex-1">
                 {isLast ? t('finishOnboarding') : t('continue')}
               </Button>
             </div>

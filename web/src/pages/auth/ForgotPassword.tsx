@@ -8,6 +8,8 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { CheckCircle } from 'lucide-react';
 import { useLang } from '../../context/LangContext';
+import { useToast } from '../../components/ui/Toast';
+import { authApi } from '../../lib/apiService';
 
 const schema = z.object({ email: z.string().email() });
 type FormData = z.infer<typeof schema>;
@@ -15,14 +17,21 @@ type FormData = z.infer<typeof schema>;
 export function ForgotPassword() {
   const [sent, setSent] = useState(false);
   const { t } = useLang();
+  const toast = useToast();
 
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
-  const onSubmit = async (_data: FormData) => {
-    await new Promise((r) => setTimeout(r, 800));
-    setSent(true);
+  const onSubmit = async (data: FormData) => {
+    try {
+      await authApi.forgotPassword(data.email);
+    } catch {
+      // Silently succeed to prevent email enumeration
+    } finally {
+      setSent(true);
+      toast.info(t('emailSentTitle'));
+    }
   };
 
   if (sent) {
@@ -44,7 +53,13 @@ export function ForgotPassword() {
       <p className="text-gray-500 text-sm mb-8">{t('forgotSub')}</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Input label={t('emailLabel')} type="email" placeholder={t('emailPlaceholder')} {...register('email')} />
+        <Input
+          label={t('emailLabel')}
+          type="email"
+          placeholder={t('emailPlaceholder')}
+          error={errors.email?.message}
+          {...register('email')}
+        />
         <Button type="submit" size="lg" loading={isSubmitting} className="w-full">{t('sendLink')}</Button>
       </form>
 

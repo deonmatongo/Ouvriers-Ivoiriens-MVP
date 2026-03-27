@@ -1,29 +1,43 @@
 import { Briefcase, Star, DollarSign, TrendingUp, ArrowRight, ToggleLeft, ToggleRight } from 'lucide-react';
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { WorkerLayout } from '../../components/layout/WorkerLayout';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { StatCardSkeleton, JobRowSkeleton } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LangContext';
+import { useToast } from '../../components/ui/Toast';
+import { useMyProfile, useUpdateAvailability } from '../../hooks/useArtisanProfile';
+import { useJobs } from '../../hooks/useJobs';
 import { formatDate, formatCurrency } from '../../lib/utils';
-
-const recentJobs = [
-  { id: '1', title: 'Réparation fuite d\'eau', titleEn: 'Water leak repair', client: 'Marie Ouédraogo', status: 'in_progress', date: '2025-03-20', amount: 50000 },
-  { id: '2', title: 'Installation prise', titleEn: 'Socket installation', client: 'Jean Bamba', status: 'quoted', date: '2025-03-19', amount: 30000 },
-  { id: '3', title: 'Peinture salon', titleEn: 'Living room painting', client: 'Aïcha Koné', status: 'completed', date: '2025-03-10', amount: 80000 },
-];
 
 export function WorkerDashboard() {
   const { user } = useAuth();
-  const { t, locale } = useLang();
-  const [available, setAvailable] = useState(true);
+  const { t } = useLang();
+  const toast = useToast();
+
+  const { data: profile, isLoading: profileLoading } = useMyProfile();
+  const { data: jobs = [], isLoading: jobsLoading } = useJobs({ limit: 5 });
+  const updateAvailability = useUpdateAvailability();
+
+  const handleToggleAvailability = async () => {
+    const next = !(profile?.is_available ?? true);
+    try {
+      await updateAvailability.mutateAsync(next);
+      toast.success(next ? t('available') : t('unavailable'));
+    } catch {
+      toast.error('Failed to update availability');
+    }
+  };
+
+  const isAvailable = profile?.is_available ?? true;
 
   const stats = [
-    { label: t('statCurrentJobs'),    value: '2',                        icon: Briefcase,   color: 'text-blue-600',   bg: 'bg-blue-50' },
-    { label: t('statRating'),         value: '4.8',                      icon: Star,        color: 'text-yellow-600', bg: 'bg-yellow-50' },
-    { label: t('statMonthEarnings'),  value: formatCurrency(185000),     icon: DollarSign,  color: 'text-green-600',  bg: 'bg-green-50' },
-    { label: t('statTotalJobs'),      value: '34',                       icon: TrendingUp,  color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: t('statCurrentJobs'),   value: jobs.filter((j) => j.status === 'in_progress').length, icon: Briefcase,  color: 'text-blue-600',   bg: 'bg-blue-50' },
+    { label: t('statRating'),        value: profile?.rating_avg?.toFixed(1) ?? '—',                icon: Star,       color: 'text-yellow-600', bg: 'bg-yellow-50' },
+    { label: t('statMonthEarnings'), value: '—',                                                    icon: DollarSign, color: 'text-green-600',  bg: 'bg-green-50' },
+    { label: t('statTotalJobs'),     value: profile?.total_jobs ?? '—',                             icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
   ];
 
   const statusMap: Record<string, { label: string; variant: 'info' | 'warning' | 'success' | 'default' }> = {
@@ -32,6 +46,14 @@ export function WorkerDashboard() {
     in_progress: { label: t('statusInProgress'), variant: 'info' },
     completed:   { label: t('statusCompleted'), variant: 'success' },
   };
+
+  // Compute profile completeness
+  const fields = ['category', 'bio', 'hourly_rate', 'experience_years', 'skills'] as const;
+  const filled = profile ? fields.filter((f) => {
+    const v = profile[f];
+    return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0);
+  }).length : 0;
+  const completeness = profile ? Math.round((filled / fields.length) * 100) : 0;
 
   return (
     <WorkerLayout>
@@ -43,41 +65,53 @@ export function WorkerDashboard() {
           <p className="text-gray-500 text-sm mt-0.5">{t('workerDashSub')}</p>
         </div>
         <button
-          onClick={() => setAvailable((v) => !v)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${available ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 bg-gray-100 text-gray-600'}`}
+          onClick={handleToggleAvailability}
+          disabled={updateAvailability.isPending || profileLoading}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors disabled:opacity-60 ${
+            isAvailable ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 bg-gray-100 text-gray-600'
+          }`}
         >
-          {available ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
-          {available ? t('available') : t('unavailable')}
+          {isAvailable ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+          {isAvailable ? t('available') : t('unavailable')}
         </button>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {stats.map(({ label, value, icon: Icon, color, bg }) => (
-          <Card key={label}>
-            <CardBody className="flex flex-col gap-3">
-              <div className={`p-2.5 rounded-xl ${bg} w-fit`}><Icon size={18} className={color} /></div>
-              <div>
-                <p className="text-xl font-bold text-gray-900">{value}</p>
-                <p className="text-xs text-gray-500">{label}</p>
-              </div>
-            </CardBody>
-          </Card>
-        ))}
+        {profileLoading
+          ? Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
+          : stats.map(({ label, value, icon: Icon, color, bg }) => (
+              <Card key={label}>
+                <CardBody className="flex flex-col gap-3">
+                  <div className={`p-2.5 rounded-xl ${bg} w-fit`}><Icon size={18} className={color} /></div>
+                  <div>
+                    <p className="text-xl font-bold text-gray-900">{value}</p>
+                    <p className="text-xs text-gray-500">{label}</p>
+                  </div>
+                </CardBody>
+              </Card>
+            ))}
       </div>
 
-      <Card className="mb-6">
-        <CardBody>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-900">{t('profileCompleteness')}</p>
-            <span className="text-sm font-bold text-primary-600">72%</span>
-          </div>
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full bg-primary-500 rounded-full" style={{ width: '72%' }} />
-          </div>
-          <p className="text-xs text-gray-500 mt-2">{t('profileCompletenessSub')}</p>
-        </CardBody>
-      </Card>
+      {/* Profile completeness */}
+      {!profileLoading && (
+        <Card className="mb-6">
+          <CardBody>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-gray-900">{t('profileCompleteness')}</p>
+              <span className="text-sm font-bold text-primary-600">{completeness}%</span>
+            </div>
+            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full bg-primary-500 rounded-full transition-all" style={{ width: `${completeness}%` }} />
+            </div>
+            {completeness < 100 && (
+              <p className="text-xs text-gray-500 mt-2">{t('profileCompletenessSub')}</p>
+            )}
+          </CardBody>
+        </Card>
+      )}
 
+      {/* Recent jobs */}
       <Card>
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-semibold text-gray-900">{t('recentWork')}</h2>
@@ -86,21 +120,25 @@ export function WorkerDashboard() {
           </Link>
         </div>
         <div className="divide-y divide-gray-100">
-          {recentJobs.map((job) => {
-            const s = statusMap[job.status];
-            return (
-              <div key={job.id} className="px-6 py-4 flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{locale === 'en' ? job.titleEn : job.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{job.client} · {formatDate(job.date)}</p>
-                </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className="text-sm font-medium text-gray-700 hidden sm:block">{formatCurrency(job.amount)}</span>
-                  <Badge variant={s.variant}>{s.label}</Badge>
-                </div>
-              </div>
-            );
-          })}
+          {jobsLoading
+            ? Array.from({ length: 3 }).map((_, i) => <JobRowSkeleton key={i} />)
+            : jobs.length === 0
+            ? <EmptyState icon={Briefcase} title="No jobs yet" description="Jobs assigned to you will appear here" />
+            : jobs.slice(0, 5).map((job) => {
+                const s = statusMap[job.status];
+                return (
+                  <div key={job.id} className="px-6 py-4 flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{job.title}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{job.client?.name ?? '—'} · {formatDate(job.created_at)}</p>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      {job.budget && <span className="text-sm font-medium text-gray-700 hidden sm:block">{formatCurrency(job.budget)}</span>}
+                      {s && <Badge variant={s.variant}>{s.label}</Badge>}
+                    </div>
+                  </div>
+                );
+              })}
         </div>
       </Card>
     </WorkerLayout>

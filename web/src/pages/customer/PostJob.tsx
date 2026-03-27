@@ -8,6 +8,8 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { useLang } from '../../context/LangContext';
+import { useToast } from '../../components/ui/Toast';
+import { useCreateJob } from '../../hooks/useJobs';
 
 const categories = [
   { fr: 'Plomberie', en: 'Plumbing' },
@@ -32,15 +34,28 @@ type FormData = z.infer<typeof schema>;
 export function PostJob() {
   const navigate = useNavigate();
   const { t, locale } = useLang();
+  const toast = useToast();
+  const createJob = useCreateJob();
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { category: '' },
   });
 
-  const onSubmit = async (_data: FormData) => {
-    await new Promise((r) => setTimeout(r, 800));
-    navigate('/dashboard/customer/jobs');
+  const onSubmit = async (data: FormData) => {
+    try {
+      await createJob.mutateAsync({
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        location_address: data.location_address,
+        budget: data.budget ? Number(data.budget) : undefined,
+      });
+      toast.success(locale === 'fr' ? 'Demande publiée avec succès' : 'Request posted successfully');
+      navigate('/dashboard/customer/jobs');
+    } catch {
+      toast.error(locale === 'fr' ? 'Erreur lors de la publication' : 'Failed to post request');
+    }
   };
 
   return (
@@ -55,8 +70,12 @@ export function PostJob() {
           <CardHeader><h2 className="font-semibold text-gray-900">{t('jobDetailsTitle')}</h2></CardHeader>
           <CardBody>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              <Input label={t('jobTitleLabel')} placeholder={t('jobTitlePlaceholder')} error={errors.title?.message} {...register('title')} />
-
+              <Input
+                label={t('jobTitleLabel')}
+                placeholder={t('jobTitlePlaceholder')}
+                error={errors.title?.message}
+                {...register('title')}
+              />
               <Select
                 label={t('categoryLabel')}
                 error={errors.category?.message}
@@ -66,7 +85,6 @@ export function PostJob() {
                 ]}
                 {...register('category')}
               />
-
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-gray-700">{t('descriptionLabel')}</label>
                 <textarea
@@ -77,10 +95,18 @@ export function PostJob() {
                 />
                 {errors.description && <p className="text-xs text-red-600">{errors.description.message}</p>}
               </div>
-
-              <Input label={t('locationLabel')} placeholder={t('locationPlaceholder')} error={errors.location_address?.message} {...register('location_address')} />
-              <Input label={t('budgetLabel')} type="number" placeholder={t('budgetPlaceholder')} {...register('budget')} />
-
+              <Input
+                label={t('locationLabel')}
+                placeholder={t('locationPlaceholder')}
+                error={errors.location_address?.message}
+                {...register('location_address')}
+              />
+              <Input
+                label={t('budgetLabel')}
+                type="number"
+                placeholder={t('budgetPlaceholder')}
+                {...register('budget')}
+              />
               <div className="flex gap-3 pt-2">
                 <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1">{t('cancel')}</Button>
                 <Button type="submit" loading={isSubmitting} className="flex-1">{t('publish')}</Button>

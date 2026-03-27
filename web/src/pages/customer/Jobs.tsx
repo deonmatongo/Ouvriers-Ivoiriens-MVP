@@ -1,25 +1,25 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PlusCircle, Search } from 'lucide-react';
+import { PlusCircle, Search, Briefcase } from 'lucide-react';
 import { CustomerLayout } from '../../components/layout/CustomerLayout';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { JobRowSkeleton } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { useLang } from '../../context/LangContext';
+import { useJobs } from '../../hooks/useJobs';
 import { formatDate, formatCurrency } from '../../lib/utils';
-
-const allJobs = [
-  { id: '1', title: 'Réparation fuite d\'eau', titleEn: 'Water leak repair', category: 'Plomberie', status: 'in_progress', createdAt: '2025-03-20', budget: 50000 },
-  { id: '2', title: 'Installation prise électrique', titleEn: 'Electrical socket installation', category: 'Électricité', status: 'quoted', createdAt: '2025-03-18', budget: 30000 },
-  { id: '3', title: 'Peinture salon', titleEn: 'Living room painting', category: 'Peinture', status: 'requested', createdAt: '2025-03-15', budget: 80000 },
-  { id: '4', title: 'Pose carrelage cuisine', titleEn: 'Kitchen tiling', category: 'Maçonnerie', status: 'completed', createdAt: '2025-02-28', budget: 120000 },
-  { id: '5', title: 'Réparation climatiseur', titleEn: 'AC repair', category: 'Électricité', status: 'completed', createdAt: '2025-02-10', budget: 25000 },
-];
+import type { RequestStatus } from '../../types';
 
 export function CustomerJobs() {
-  const { t, locale } = useLang();
+  const { t } = useLang();
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState<'all' | RequestStatus>('all');
+
+  const { data: jobs = [], isLoading, isError, refetch } = useJobs(
+    filter !== 'all' ? { status: filter } : undefined
+  );
 
   const statusMap: Record<string, { label: string; variant: 'info' | 'warning' | 'success' | 'default' }> = {
     requested:   { label: t('statusRequested'),  variant: 'default' },
@@ -30,28 +30,23 @@ export function CustomerJobs() {
   };
 
   const filters = [
-    { key: 'all', label: t('filterAll') },
-    { key: 'requested', label: t('filterPublished') },
-    { key: 'quoted', label: t('filterQuoted') },
+    { key: 'all',         label: t('filterAll') },
+    { key: 'requested',   label: t('filterPublished') },
+    { key: 'quoted',      label: t('filterQuoted') },
     { key: 'in_progress', label: t('filterInProgress') },
-    { key: 'completed', label: t('filterCompleted') },
-  ];
+    { key: 'completed',   label: t('filterCompleted') },
+  ] as const;
 
-  const filtered = allJobs.filter((j) => {
-    const title = locale === 'en' ? j.titleEn : j.title;
-    const matchSearch = title.toLowerCase().includes(search.toLowerCase()) ||
-      j.category.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === 'all' || j.status === filter;
-    return matchSearch && matchFilter;
-  });
+  const visible = jobs.filter((j) =>
+    j.title.toLowerCase().includes(search.toLowerCase()) ||
+    j.category.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <CustomerLayout>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">{t('myJobs')}</h1>
-        <Link to="/post-job">
-          <Button><PlusCircle size={16} />{t('navNewJob')}</Button>
-        </Link>
+        <Link to="/post-job"><Button><PlusCircle size={16} />{t('navNewJob')}</Button></Link>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -68,7 +63,7 @@ export function CustomerJobs() {
           {filters.map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => setFilter(key)}
+              onClick={() => setFilter(key as typeof filter)}
               className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                 filter === key ? 'bg-primary-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
               }`}
@@ -81,22 +76,32 @@ export function CustomerJobs() {
 
       <Card>
         <div className="divide-y divide-gray-100">
-          {filtered.length === 0 ? (
-            <div className="px-6 py-12 text-center text-gray-500">
-              <p className="font-medium">{t('noJobsFound')}</p>
-              <p className="text-sm mt-1">{t('noJobsSub')}</p>
+          {isError ? (
+            <div className="px-6 py-8 text-center">
+              <p className="text-sm text-red-600 mb-3">Failed to load jobs</p>
+              <Button size="sm" variant="outline" onClick={() => refetch()}>Retry</Button>
             </div>
+          ) : isLoading ? (
+            Array.from({ length: 4 }).map((_, i) => <JobRowSkeleton key={i} />)
+          ) : visible.length === 0 ? (
+            <EmptyState
+              icon={Briefcase}
+              title={t('noJobsFound')}
+              description={t('noJobsSub')}
+            />
           ) : (
-            filtered.map((job) => {
+            visible.map((job) => {
               const s = statusMap[job.status];
               return (
                 <div key={job.id} className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-gray-50">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{locale === 'en' ? job.titleEn : job.title}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{job.category} · {formatDate(job.createdAt)}</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{job.title}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{job.category} · {formatDate(job.created_at)}</p>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className="text-sm font-medium text-gray-700 hidden sm:block">{formatCurrency(job.budget)}</span>
+                    {job.budget && (
+                      <span className="text-sm font-medium text-gray-700 hidden sm:block">{formatCurrency(job.budget)}</span>
+                    )}
                     <Badge variant={s.variant}>{s.label}</Badge>
                   </div>
                 </div>
