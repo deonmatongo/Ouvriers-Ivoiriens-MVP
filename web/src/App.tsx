@@ -4,6 +4,9 @@ import { LangProvider } from './context/LangContext';
 import { ToastProvider } from './components/ui/Toast';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
+// Landing
+import { Landing } from './pages/landing/Landing';
+
 // Auth pages
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
@@ -68,8 +71,8 @@ function App() {
               <Route path="/dashboard/worker/reviews" element={<ProtectedRoute roles={['artisan']}><WorkerReviews /></ProtectedRoute>} />
 
               {/* Default */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
-              <Route path="*" element={<Navigate to="/login" replace />} />
+              <Route path="/" element={<Landing />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>
         </ToastProvider>
