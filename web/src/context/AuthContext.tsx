@@ -37,6 +37,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
+    // --- MOCK ACCOUNTS (remove when backend is live) ---
+    const mocks: Record<string, User> = {
+      'client@test.com':  { id: 'mock-client-1',  name: 'Marie Ouédraogo', email: 'client@test.com',  role: 'client' },
+      'artisan@test.com': { id: 'mock-artisan-1', name: 'Konan Électricité', email: 'artisan@test.com', role: 'artisan' },
+    };
+    if (password === 'password123' && mocks[email]) {
+      const mockUser = mocks[email];
+      localStorage.setItem('accessToken', 'mock-access-token');
+      localStorage.setItem('refreshToken', 'mock-refresh-token');
+      localStorage.setItem('user', JSON.stringify(mockUser));
+      setUser(mockUser);
+      return;
+    }
+    // ---------------------------------------------------
     const { data } = await api.post('/auth/login', { email, password });
     localStorage.setItem('accessToken', data.accessToken);
     localStorage.setItem('refreshToken', data.refreshToken);

@@ -1,42 +1,40 @@
 import { Star } from 'lucide-react';
 import { WorkerLayout } from '../../components/layout/WorkerLayout';
 import { Card, CardBody } from '../../components/ui/Card';
+import { useLang } from '../../context/LangContext';
 import { formatDate } from '../../lib/utils';
 
 const reviews = [
-  { id: '1', client: 'Marie O.', rating: 5, comment: 'Excellent travail, très professionnel et ponctuel.', date: '2025-03-15', job: 'Réparation fuite d\'eau' },
-  { id: '2', client: 'Jean B.', rating: 4, comment: 'Bon travail, quelques retards mais résultat satisfaisant.', date: '2025-03-01', job: 'Installation prise' },
-  { id: '3', client: 'Aïcha K.', rating: 5, comment: 'Je recommande vivement, très soigné.', date: '2025-02-18', job: 'Peinture salon' },
+  { id: '1', client: 'Marie O.', rating: 5, comment: 'Excellent travail, très professionnel et ponctuel.', commentEn: 'Excellent work, very professional and punctual.', date: '2025-03-15', job: 'Réparation fuite d\'eau', jobEn: 'Water leak repair' },
+  { id: '2', client: 'Jean B.', rating: 4, comment: 'Bon travail, quelques retards mais résultat satisfaisant.', commentEn: 'Good work, some delays but satisfactory result.', date: '2025-03-01', job: 'Installation prise', jobEn: 'Socket installation' },
+  { id: '3', client: 'Aïcha K.', rating: 5, comment: 'Je recommande vivement, très soigné.', commentEn: 'Highly recommended, very thorough.', date: '2025-02-18', job: 'Peinture salon', jobEn: 'Living room painting' },
 ];
 
-const avgRating = reviews.reduce((a, r) => a + r.rating, 0) / reviews.length;
+const avg = reviews.reduce((a, r) => a + r.rating, 0) / reviews.length;
 
 function Stars({ value }: { value: number }) {
   return (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map((i) => (
-        <Star
-          key={i}
-          size={14}
-          className={i <= value ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-200'}
-        />
+        <Star key={i} size={14} className={i <= value ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-200'} />
       ))}
     </div>
   );
 }
 
 export function WorkerReviews() {
+  const { t, locale } = useLang();
+
   return (
     <WorkerLayout>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Avis reçus</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('workerReviewsTitle')}</h1>
 
-      {/* Summary */}
       <Card className="mb-6">
         <CardBody className="flex items-center gap-6">
           <div className="text-center">
-            <p className="text-5xl font-bold text-gray-900">{avgRating.toFixed(1)}</p>
-            <Stars value={Math.round(avgRating)} />
-            <p className="text-xs text-gray-500 mt-1">{reviews.length} avis</p>
+            <p className="text-5xl font-bold text-gray-900">{avg.toFixed(1)}</p>
+            <Stars value={Math.round(avg)} />
+            <p className="text-xs text-gray-500 mt-1">{reviews.length} {t('reviewCount')}</p>
           </div>
           <div className="flex-1 space-y-2">
             {[5, 4, 3, 2, 1].map((star) => {
@@ -57,7 +55,6 @@ export function WorkerReviews() {
         </CardBody>
       </Card>
 
-      {/* Review list */}
       <div className="space-y-3">
         {reviews.map((r) => (
           <Card key={r.id}>
@@ -69,7 +66,7 @@ export function WorkerReviews() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-900">{r.client}</p>
-                    <p className="text-xs text-gray-500">{r.job}</p>
+                    <p className="text-xs text-gray-500">{locale === 'en' ? r.jobEn : r.job}</p>
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
@@ -77,9 +74,7 @@ export function WorkerReviews() {
                   <p className="text-xs text-gray-400 mt-0.5">{formatDate(r.date)}</p>
                 </div>
               </div>
-              {r.comment && (
-                <p className="text-sm text-gray-600 mt-2 pl-12">{r.comment}</p>
-              )}
+              <p className="text-sm text-gray-600 mt-2 pl-12">{locale === 'en' ? r.commentEn : r.comment}</p>
             </CardBody>
           </Card>
         ))}

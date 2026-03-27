@@ -6,16 +6,17 @@ import { AuthLayout } from '../../components/layout/AuthLayout';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
+import { useLang } from '../../context/LangContext';
 
 const schema = z.object({
-  email: z.string().email('Email invalide'),
-  password: z.string().min(1, 'Mot de passe requis'),
+  email: z.string().email(),
+  password: z.string().min(1),
 });
-
 type FormData = z.infer<typeof schema>;
 
 export function Login() {
   const { login } = useAuth();
+  const { t } = useLang();
   const navigate = useNavigate();
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, setError } = useForm<FormData>({
@@ -29,18 +30,15 @@ export function Login() {
       if (user.role === 'artisan') navigate('/dashboard/worker');
       else if (user.role === 'admin') navigate('/admin');
       else navigate('/dashboard/customer');
-    } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        'Identifiants invalides';
-      setError('root', { message });
+    } catch {
+      setError('root', { message: t('invalidCredentials') });
     }
   };
 
   return (
     <AuthLayout>
-      <h2 className="text-2xl font-bold text-gray-900 mb-1">Connexion</h2>
-      <p className="text-gray-500 text-sm mb-8">Accédez à votre espace personnel</p>
+      <h2 className="text-2xl font-bold text-gray-900 mb-1">{t('loginTitle')}</h2>
+      <p className="text-gray-500 text-sm mb-8">{t('loginSub')}</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {errors.root && (
@@ -48,39 +46,19 @@ export function Login() {
             {errors.root.message}
           </div>
         )}
-
-        <Input
-          label="Email"
-          type="email"
-          placeholder="vous@exemple.com"
-          error={errors.email?.message}
-          {...register('email')}
-        />
-
-        <Input
-          label="Mot de passe"
-          type="password"
-          placeholder="••••••••"
-          error={errors.password?.message}
-          {...register('password')}
-        />
+        <Input label={t('emailLabel')} type="email" placeholder={t('emailPlaceholder')} error={errors.email?.message} {...register('email')} />
+        <Input label={t('passwordLabel')} type="password" placeholder={t('passwordPlaceholder')} error={errors.password?.message} {...register('password')} />
 
         <div className="flex justify-end">
-          <Link to="/forgot-password" className="text-sm text-primary-600 hover:underline">
-            Mot de passe oublié ?
-          </Link>
+          <Link to="/forgot-password" className="text-sm text-primary-600 hover:underline">{t('forgotPassword')}</Link>
         </div>
 
-        <Button type="submit" size="lg" loading={isSubmitting} className="w-full">
-          Se connecter
-        </Button>
+        <Button type="submit" size="lg" loading={isSubmitting} className="w-full">{t('loginBtn')}</Button>
       </form>
 
       <p className="text-center text-sm text-gray-600 mt-6">
-        Pas encore de compte ?{' '}
-        <Link to="/register" className="text-primary-600 font-medium hover:underline">
-          S'inscrire
-        </Link>
+        {t('noAccount')}{' '}
+        <Link to="/register" className="text-primary-600 font-medium hover:underline">{t('signUp')}</Link>
       </p>
     </AuthLayout>
   );

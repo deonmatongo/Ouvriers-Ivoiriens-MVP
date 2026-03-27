@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { LangProvider } from './context/LangContext';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
 // Auth pages
@@ -22,6 +23,7 @@ import { Onboarding } from './pages/worker/onboarding/Onboarding';
 
 function App() {
   return (
+    <LangProvider>
     <AuthProvider>
       <BrowserRouter>
         <Routes>
@@ -114,6 +116,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </LangProvider>
   );
 }
 
