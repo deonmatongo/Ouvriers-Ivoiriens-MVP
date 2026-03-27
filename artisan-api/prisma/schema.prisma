@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  client
+  artisan
+  admin
+}
+
+enum RequestStatus {
+  requested
+  quoted
+  accepted
+  in_progress
+  completed
+}
+
+enum QuoteStatus {
+  pending
+  accepted
+  rejected
+}
+
+enum PaymentMethod {
+  orange_money
+  mtn
+  wave
+  card
+}
+
+enum PaymentStatus {
+  pending
+  success
+  failed
+}
+
+model User {
+  id             String   @id @default(uuid())
+  name           String
+  email          String   @unique
+  phone          String?
+  phone_verified Boolean  @default(false)
+  password_hash  String
+  role           Role     @default(client)
+  avatar_url     String?
+  created_at     DateTime @default(now())
+
+  artisan_profile   ArtisanProfile?
+  client_requests   ServiceRequest[] @relation("ClientRequests")
+  artisan_requests  ServiceRequest[] @relation("ArtisanRequests")
+  sent_messages     Message[]        @relation("SentMessages")
+  received_messages Message[]        @relation("ReceivedMessages")
+  client_reviews    Review[]         @relation("ClientReviews")
+  client_transactions Transaction[]  @relation("ClientTransactions")
+  refresh_tokens    RefreshToken[]
+
+  @@map("users")
+}
+
+model ArtisanProfile {
+  id               String   @id @default(uuid())
+  user_id          String   @unique
+  user             User     @relation(fields: [user_id], references: [id])
+  category         String?
+  skills           String[]
+  bio              String?
+  hourly_rate      Decimal?
+  experience_years Int?
+  is_verified      Boolean  @default(false)
+  is_available     Boolean  @default(true)
+  rating_avg       Decimal  @default(0)
+  total_jobs       Int      @default(0)
+  latitude         Decimal?
+  longitude        Decimal?
+  created_at       DateTime @default(now())
+
+  quotes       Quote[]
+  reviews      Review[]
+  transactions Transaction[]
+
+  @@map("artisan_profiles")
+}
+
+model ServiceRequest {
+  id               String        @id @default(uuid())
+  client_id        String
+  client           User          @relation("ClientRequests", fields: [client_id], references: [id])
+  artisan_id       String?
+  artisan          User?         @relation("ArtisanRequests", fields: [artisan_id], references: [id])
+  title            String
+  description      String
+  category         String
+  status           RequestStatus @default(requested)
+  location_address String?
+  latitude         Decimal?
+  longitude        Decimal?
+  budget           Decimal?
+  created_at       DateTime      @default(now())
+
+  quotes       Quote[]
+  messages     Message[]
+  review       Review?
+  transactions Transaction[]
+
+  @@map("service_requests")
+}
+
+model Quote {
+  id         String         @id @default(uuid())
+  request_id String
+  request    ServiceRequest @relation(fields: [request_id], references: [id])
+  artisan_id String
+  artisan    ArtisanProfile @relation(fields: [artisan_id], references: [id])
+  price      Decimal
+  message    String?
+  status     QuoteStatus    @default(pending)
+  created_at DateTime       @default(now())
+
+  @@map("quotes")
+}
+
+model Message {
+  id          String         @id @default(uuid())
+  sender_id   String
+  sender      User           @relation("SentMessages", fields: [sender_id], references: [id])
+  receiver_id String
+  receiver    User           @relation("ReceivedMessages", fields: [receiver_id], references: [id])
+  request_id  String
+  request     ServiceRequest @relation(fields: [request_id], references: [id])
+  content     String
+  is_read     Boolean        @default(false)
+  sent_at     DateTime       @default(now())
+
+  @@map("messages")
+}
+
+model Review {
+  id         String         @id @default(uuid())
+  client_id  String
+  client     User           @relation("ClientReviews", fields: [client_id], references: [id])
+  artisan_id String
+  artisan    ArtisanProfile @relation(fields: [artisan_id], references: [id])
+  request_id String         @unique
+  request    ServiceRequest @relation(fields: [request_id], references: [id])
+  rating     Int
+  comment    String?
+  created_at DateTime       @default(now())
+
+  @@map("reviews")
+}
+
+model Transaction {
+  id             String         @id @default(uuid())
+  request_id     String
+  request        ServiceRequest @relation(fields: [request_id], references: [id])
+  client_id      String
+  client         User           @relation("ClientTransactions", fields: [client_id], references: [id])
+  artisan_id     String
+  artisan        ArtisanProfile @relation(fields: [artisan_id], references: [id])
+  amount         Decimal
+  currency       String         @default("XOF")
+  payment_method PaymentMethod
+  status         PaymentStatus  @default(pending)
+  provider_ref   String?
+  created_at     DateTime       @default(now())
+
+  @@map("transactions")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  icon_url  String?
+  is_active Boolean  @default(true)
+
+  @@map("categories")
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  token      String   @unique
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id])
+  device_id  String?
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
