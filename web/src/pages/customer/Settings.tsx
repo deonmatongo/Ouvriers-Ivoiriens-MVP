@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Globe, Lock, Shield, Trash2, ChevronRight, Moon } from 'lucide-react';
+import { Bell, Lock, Shield, Trash2, ChevronRight, Moon } from 'lucide-react';
 import { CustomerLayout } from '../../components/layout/CustomerLayout';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';

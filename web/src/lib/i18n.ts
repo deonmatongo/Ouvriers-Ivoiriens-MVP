@@ -161,7 +161,6 @@ export const translations = {
     onboardingStepOf: 'sur',
     skillsLabel: 'Compétences',
     skillsPlaceholder: 'Ex: Plomberie sanitaire',
-    addSkill: 'Ajouter',
     rateLabel: 'Tarif horaire (FCFA)',
     ratePlaceholder: '5000',
     rateHint: 'Le tarif moyen pour votre catégorie est de 4 000 – 8 000 FCFA/heure. Un tarif compétitif vous aidera à obtenir vos premières missions.',
@@ -288,6 +287,15 @@ export const translations = {
 
     landingTestimonials_badge: 'Ce que disent les clients',
     landingTestimonials_title: 'Approuvé par des milliers de personnes',
+    landingReviews_badge: 'Avis vérifiés',
+    landingReviews_title: 'Ce que disent nos clients',
+    landingReviews_all: 'Tous',
+    landingReviews_artisanLabel: 'Artisan',
+
+    viewPublicProfile: 'Voir mon profil public',
+    addSkill: 'Ajouter une compétence',
+    skillsChipPlaceholder: 'Ex: Installation tableau',
+    profileCompletenessTitle: 'Complétude du profil',
 
     landingCTA_title: 'Prêt à commencer ?',
     landingCTA_sub: 'Rejoignez des milliers de clients et d\'artisans déjà sur la plateforme.',
@@ -465,7 +473,6 @@ export const translations = {
     onboardingStepOf: 'of',
     skillsLabel: 'Skills',
     skillsPlaceholder: 'e.g. Sanitary plumbing',
-    addSkill: 'Add',
     rateLabel: 'Hourly rate (XOF)',
     ratePlaceholder: '5000',
     rateHint: 'The average rate for your category is 4,000 – 8,000 XOF/hour. A competitive rate will help you land your first jobs.',
@@ -592,6 +599,15 @@ export const translations = {
 
     landingTestimonials_badge: 'What clients say',
     landingTestimonials_title: 'Trusted by thousands',
+    landingReviews_badge: 'Verified reviews',
+    landingReviews_title: 'What our clients say',
+    landingReviews_all: 'All',
+    landingReviews_artisanLabel: 'Artisan',
+
+    viewPublicProfile: 'View my public profile',
+    addSkill: 'Add a skill',
+    skillsChipPlaceholder: 'e.g. Panel installation',
+    profileCompletenessTitle: 'Profile completeness',
 
     landingCTA_title: 'Ready to get started?',
     landingCTA_sub: 'Join thousands of clients and artisans already on the platform.',
