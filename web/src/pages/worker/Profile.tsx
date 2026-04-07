@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Camera } from 'lucide-react';
+import { Camera, ExternalLink, X, Plus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { WorkerLayout } from '../../components/layout/WorkerLayout';
 import { Card, CardBody, CardHeader } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -41,15 +42,23 @@ export function WorkerProfile() {
   const { t, locale } = useLang();
   const toast = useToast();
   const avatarRef = useRef<HTMLInputElement>(null);
+  const [skills, setSkills] = useState<string[]>(['Installation', 'Dépannage', 'Rénovation']);
+  const [newSkill, setNewSkill] = useState('');
 
   const { data: profile, isLoading } = useMyProfile();
   const upsert = useUpsertProfile();
   const uploadAvatar = useUploadAvatar();
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting, isDirty } } = useForm<FormData>({
+  const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting, isDirty } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { name: user?.name || '', phone: '', bio: '', category: '', hourly_rate: '', experience_years: '', location: '' },
   });
+
+  const watchedFields = watch(['name', 'phone', 'bio', 'category', 'hourly_rate', 'experience_years', 'location']);
+  const completeness = Math.round(
+    ([watchedFields[0], watchedFields[1], watchedFields[2], watchedFields[3], watchedFields[4], watchedFields[5], watchedFields[6]]
+      .filter(Boolean).length / 7) * 100
+  );
 
   // Populate form when profile loads
   useEffect(() => {
@@ -65,6 +74,14 @@ export function WorkerProfile() {
       });
     }
   }, [profile, user, reset]);
+
+  const handleAddSkill = () => {
+    const s = newSkill.trim();
+    if (s && !skills.includes(s)) { setSkills([...skills, s]); }
+    setNewSkill('');
+  };
+
+  const handleRemoveSkill = (s: string) => setSkills(skills.filter((x) => x !== s));
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -105,10 +122,38 @@ export function WorkerProfile() {
   return (
     <WorkerLayout>
       <div className="max-w-2xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">{t('workerProfileTitle')}</h1>
-          <p className="text-gray-500 text-sm mt-1">{t('workerProfileSub')}</p>
+        <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{t('workerProfileTitle')}</h1>
+            <p className="text-gray-500 text-sm mt-1">{t('workerProfileSub')}</p>
+          </div>
+          <Link
+            to={`/artisans/${user?.id ?? 'me'}`}
+            className="flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 border border-primary-200 rounded-lg px-3 py-1.5 hover:bg-primary-50 transition-colors"
+          >
+            <ExternalLink size={14} />
+            {t('viewPublicProfile')}
+          </Link>
         </div>
+
+        {/* Completeness bar */}
+        <Card className="mb-4">
+          <CardBody>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-gray-700">{t('profileCompletenessTitle')}</span>
+              <span className={`text-sm font-bold ${completeness >= 80 ? 'text-green-600' : completeness >= 50 ? 'text-yellow-600' : 'text-red-500'}`}>{completeness}%</span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full transition-all duration-500 ${completeness >= 80 ? 'bg-green-500' : completeness >= 50 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                style={{ width: `${completeness}%` }}
+              />
+            </div>
+            {completeness < 100 && (
+              <p className="text-xs text-gray-400 mt-1.5">{t('profileCompletenessSub')}</p>
+            )}
+          </CardBody>
+        </Card>
 
         {/* Avatar */}
         <Card className="mb-4">
@@ -173,6 +218,43 @@ export function WorkerProfile() {
               </div>
             </CardBody>
           </Card>
+
+        {/* Skills */}
+        <Card className="mb-4">
+          <CardHeader><h2 className="font-semibold text-gray-900">{t('skillsLabel')}</h2></CardHeader>
+          <CardBody className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {skills.map((s) => (
+                <span key={s} className="flex items-center gap-1.5 px-3 py-1 bg-primary-50 text-primary-700 text-sm font-medium rounded-full border border-primary-200">
+                  {s}
+                  <button type="button" onClick={() => handleRemoveSkill(s)} className="text-primary-400 hover:text-primary-700 transition-colors">
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+              {skills.length === 0 && (
+                <p className="text-sm text-gray-400">{locale === 'fr' ? 'Aucune compétence ajoutée' : 'No skills added yet'}</p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <input
+                value={newSkill}
+                onChange={(e) => setNewSkill(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSkill(); } }}
+                placeholder={t('skillsChipPlaceholder')}
+                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+              <button
+                type="button"
+                onClick={handleAddSkill}
+                disabled={!newSkill.trim()}
+                className="flex items-center gap-1.5 px-3 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 disabled:opacity-40 transition-colors"
+              >
+                <Plus size={14} /> {t('addSkill')}
+              </button>
+            </div>
+          </CardBody>
+        </Card>
 
           <div className="flex justify-end">
             <Button type="submit" loading={isSubmitting} disabled={!isDirty}>{t('saveChanges')}</Button>

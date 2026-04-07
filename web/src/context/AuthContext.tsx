@@ -42,8 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     // --- MOCK ACCOUNTS (remove when backend is live) ---
     const mocks: Record<string, User> = {
-      'client@test.com':  { id: 'mock-client-1',  name: 'Marie Ouédraogo', email: 'client@test.com',  role: 'client' },
+      'client@test.com':  { id: 'mock-client-1',  name: 'Marie Ouédraogo',  email: 'client@test.com',  role: 'client' },
       'artisan@test.com': { id: 'mock-artisan-1', name: 'Konan Électricité', email: 'artisan@test.com', role: 'artisan' },
+      'admin@test.com':   { id: 'mock-admin-1',   name: 'Admin Plateforme',  email: 'admin@test.com',   role: 'admin' },
     };
     if (password === 'password123' && mocks[email]) {
       const mockUser = mocks[email];

@@ -60,6 +60,21 @@ export function Login() {
         {t('noAccount')}{' '}
         <Link to="/register" className="text-primary-600 font-medium hover:underline">{t('signUp')}</Link>
       </p>
+
+      {/* Demo credentials */}
+      <div className="mt-6 border border-dashed border-gray-200 rounded-xl p-4 bg-gray-50 space-y-1.5">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Comptes démo / Demo accounts</p>
+        {[
+          { label: 'Client', email: 'client@test.com' },
+          { label: 'Artisan', email: 'artisan@test.com' },
+          { label: 'Admin', email: 'admin@test.com' },
+        ].map(({ label, email }) => (
+          <div key={email} className="flex items-center justify-between text-xs">
+            <span className="font-medium text-gray-600">{label}</span>
+            <span className="text-gray-400 font-mono">{email} / password123</span>
+          </div>
+        ))}
+      </div>
     </AuthLayout>
   );
 }

@@ -20,6 +20,7 @@ export function ProtectedRoute({ children, roles }: Props) {
   if (!user) return <Navigate to="/login" replace />;
 
   if (roles && !roles.includes(user.role as 'client' | 'artisan' | 'admin')) {
+    if (user.role === 'admin') return <Navigate to="/admin" replace />;
     if (user.role === 'artisan') return <Navigate to="/dashboard/worker" replace />;
     return <Navigate to="/dashboard/customer" replace />;
   }

@@ -9,7 +9,10 @@ import { Button } from '../../components/ui/Button';
 import { CheckCircle } from 'lucide-react';
 import { useLang } from '../../context/LangContext';
 import { useToast } from '../../components/ui/Toast';
-import { authApi } from '../../lib/apiService';
+// Mock for demo — replace with real authApi when backend is live
+const authApi = {
+  forgotPassword: async (_email: string) => { await new Promise((r) => setTimeout(r, 800)); },
+};
 
 const schema = z.object({ email: z.string().email() });
 type FormData = z.infer<typeof schema>;

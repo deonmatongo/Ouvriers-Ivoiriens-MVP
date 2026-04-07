@@ -107,7 +107,13 @@ export function BrowseArtisans() {
   });
 
   const handleContact = (artisan: MockArtisan) => {
-    navigate('/messages', { state: { pendingContact: { id: artisan.id, name: artisan.name } } });
+    // Client-initiated inbound request: conversation starts locked until artisan accepts (−5 credits)
+    navigate('/messages', {
+      state: {
+        pendingContact: { id: artisan.id, name: artisan.name },
+        convStatus: 'pending_acceptance',
+      },
+    });
   };
 
   return (
@@ -160,13 +166,16 @@ export function BrowseArtisans() {
           {filtered.map((artisan) => (
             <div key={artisan.id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">
               {/* Card header */}
-              <div className="p-5 border-b border-gray-100 flex items-start gap-4">
+              <div
+                className="p-5 border-b border-gray-100 flex items-start gap-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                onClick={() => navigate(`/artisans/${artisan.id}`)}
+              >
                 <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-lg flex-shrink-0">
                   {artisan.name[0]}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <h3 className="font-semibold text-gray-900 truncate">{artisan.name}</h3>
+                    <h3 className="font-semibold text-gray-900 truncate hover:text-primary-600 transition-colors">{artisan.name}</h3>
                     <Badge variant={artisan.available ? 'success' : 'default'} className="flex-shrink-0">
                       {artisan.available ? t('available') : t('unavailable')}
                     </Badge>

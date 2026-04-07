@@ -90,11 +90,14 @@ export interface Review {
   request?: Job;
 }
 
+export type ConvStatus = 'active' | 'pending_acceptance';
+
 export interface Conversation {
   user: User;
   last_message: Message;
   unread_count: number;
   request_id: string;
+  conv_status: ConvStatus;
 }
 
 // API response shapes

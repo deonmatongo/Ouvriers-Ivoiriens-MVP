@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLang } from '../../context/LangContext';
 import {
@@ -324,65 +325,83 @@ function Features() {
   );
 }
 
-// ─── Testimonials ─────────────────────────────────────────────────────────────
+// ─── Category Reviews ──────────────────────────────────────────────────────────
 
-function Testimonials() {
+const CATEGORY_REVIEWS = [
+  { id: 1, category: 'Électricité', clientName: 'Konan Marius', location: 'Cocody', artisanName: 'Konan Électricité', rating: 5, text_fr: 'J\'ai trouvé un électricien en moins de 10 minutes. Tableau refait proprement, prix transparent. Je recommande vraiment.', text_en: 'Found an electrician in under 10 minutes. Panel redone cleanly, transparent pricing. Highly recommend.' },
+  { id: 2, category: 'Plomberie', clientName: 'Adjoua Florence', location: 'Yopougon', artisanName: 'Fatou Plomberie', rating: 5, text_fr: 'La fuite était réparée en 2 heures. Intervention rapide, sans dégâts. Très professionnel.', text_en: 'The leak was fixed in 2 hours. Quick response, no mess. Very professional.' },
+  { id: 3, category: 'Menuiserie', clientName: 'Yao Brice', location: 'Plateau', artisanName: 'Ibrahim Menuiserie', rating: 5, text_fr: 'Mes meubles sur mesure sont magnifiques. Ibrahim a compris exactement ce que je voulais. Travail soigné.', text_en: 'My custom furniture is beautiful. Ibrahim understood exactly what I wanted. Neat work.' },
+  { id: 4, category: 'Peinture', clientName: 'Awa Diallo', location: 'Marcory', artisanName: 'Adjoua Peinture', rating: 5, text_fr: 'Peinture du salon terminée en une journée. Rendu impeccable, propre et bien fini. Très satisfaite.', text_en: 'Living room painted in one day. Impeccable, clean, and well-finished result. Very satisfied.' },
+  { id: 5, category: 'Maçonnerie', clientName: 'Gbané Seydou', location: 'Abobo', artisanName: 'Kouassi Maçonnerie', rating: 5, text_fr: 'Carrelage de toute la maison, travail parfait. Kouassi est sérieux et ponctuel. Je le recommande sans hésiter.', text_en: 'Tiled the whole house, perfect work. Kouassi is serious and punctual. I recommend without hesitation.' },
+  { id: 6, category: 'Climatisation', clientName: 'Tanon Marie', location: 'Cocody', artisanName: 'Ama Climatisation', rating: 5, text_fr: 'Installation du climatiseur faite proprement. Ama explique bien et le SAV est réactif. Top.', text_en: 'AC unit installed cleanly. Ama explains well and after-sales service is responsive. Top.' },
+  { id: 7, category: 'Électricité', clientName: 'Koffi Théodore', location: 'Treichville', artisanName: 'Konan Électricité', rating: 4, text_fr: 'Dépannage électrique résolu rapidement. Bon rapport qualité/prix. Reviendra en cas de besoin.', text_en: 'Electrical fault resolved quickly. Good value for money. Will come back if needed.' },
+  { id: 8, category: 'Plomberie', clientName: 'Bamba Sali', location: 'Angré', artisanName: 'Fatou Plomberie', rating: 5, text_fr: 'Débouchage et remplacement des tuyaux. Résultat nickel. Fatou est efficace et honnête sur les prix.', text_en: 'Unblocking and pipe replacement. Spotless result. Fatou is efficient and honest about pricing.' },
+  { id: 9, category: 'Menuiserie', clientName: 'Coulibaly N\'Golo', location: 'Yopougon', artisanName: 'Ibrahim Menuiserie', rating: 5, text_fr: 'Pose de parquet dans 3 pièces. Résultat superbe. Ibrahim respecte les délais annoncés.', text_en: 'Parquet flooring in 3 rooms. Superb result. Ibrahim keeps to announced deadlines.' },
+  { id: 10, category: 'Peinture', clientName: 'Kouamé Roselyne', location: 'Cocody', artisanName: 'Adjoua Peinture', rating: 5, text_fr: 'Décoration complète du bureau. Adjoua a des idées créatives et un travail soigné. Très content.', text_en: 'Full office decoration. Adjoua has creative ideas and neat work. Very happy.' },
+  { id: 11, category: 'Maçonnerie', clientName: 'Touré Ibrahim', location: 'Abobo', artisanName: 'Kouassi Maçonnerie', rating: 4, text_fr: 'Renovation salle de bain complète. Délai un peu long mais résultat à la hauteur. Bonne expérience.', text_en: 'Full bathroom renovation. Took a bit long but result is up to par. Good experience.' },
+  { id: 12, category: 'Climatisation', clientName: 'Dembélé Fatou', location: 'Plateau', artisanName: 'Ama Climatisation', rating: 5, text_fr: 'Maintenance annuelle et recharge. Ama connait très bien son métier. Prix compétitif.', text_en: 'Annual maintenance and recharge. Ama knows the trade very well. Competitive price.' },
+];
+
+const REVIEW_CATEGORIES = ['Électricité', 'Plomberie', 'Menuiserie', 'Peinture', 'Maçonnerie', 'Climatisation'];
+
+function CategoryReviews() {
   const { t, locale } = useLang();
+  const [activeTab, setActiveTab] = useState('');
 
-  const testimonials = [
-    {
-      name: 'Konan Marius',
-      role: locale === 'fr' ? 'Client, Cocody' : 'Client, Cocody',
-      text: locale === 'fr'
-        ? 'J\'ai trouvé un plombier en moins de 10 minutes. Travail impeccable, prix transparent. Je recommande.'
-        : 'I found a plumber in less than 10 minutes. Impeccable work, transparent pricing. Highly recommend.',
-      rating: 5,
-    },
-    {
-      name: 'Adjoua Florence',
-      role: locale === 'fr' ? 'Cliente, Yopougon' : 'Client, Yopougon',
-      text: locale === 'fr'
-        ? 'Excellent service. L\'électricien est venu le jour même et a tout réparé. Le chat dans l\'app est super pratique.'
-        : 'Excellent service. The electrician came the same day and fixed everything. The in-app chat is very handy.',
-      rating: 5,
-    },
-    {
-      name: 'Yao Brice',
-      role: locale === 'fr' ? 'Artisan électricien, Abobo' : 'Electrician, Abobo',
-      text: locale === 'fr'
-        ? 'Depuis que j\'ai rejoint la plateforme, j\'ai plus de 15 clients réguliers. Mon chiffre d\'affaires a doublé.'
-        : 'Since joining the platform, I have 15+ regular clients. My revenue has doubled.',
-      rating: 5,
-    },
-  ];
+  const filtered = activeTab ? CATEGORY_REVIEWS.filter((r) => r.category === activeTab) : CATEGORY_REVIEWS;
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8">
+    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-14">
+        <div className="text-center mb-12">
           <span className="inline-block bg-primary-50 text-primary-700 text-xs font-semibold px-3 py-1 rounded-full mb-4 uppercase tracking-wide">
-            {t('landingTestimonials_badge')}
+            {t('landingReviews_badge')}
           </span>
-          <h2 className="text-4xl font-bold text-gray-900">{t('landingTestimonials_title')}</h2>
+          <h2 className="text-4xl font-bold text-gray-900">{t('landingReviews_title')}</h2>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map(({ name, role, text, rating }) => (
-            <div key={name} className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
-              <div className="flex gap-0.5 mb-4">
-                {Array.from({ length: rating }).map((_, i) => (
-                  <Star key={i} size={16} className="text-yellow-400 fill-yellow-400" />
-                ))}
+        {/* Category tabs */}
+        <div className="flex flex-wrap gap-2 justify-center mb-10">
+          <button
+            onClick={() => setActiveTab('')}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${!activeTab ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-primary-300'}`}
+          >
+            {t('landingReviews_all')}
+          </button>
+          {REVIEW_CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveTab(cat === activeTab ? '' : cat)}
+              className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${activeTab === cat ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-primary-300'}`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filtered.map((review) => (
+            <div key={review.id} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col gap-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} size={14} className={i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-200'} />
+                  ))}
+                </div>
+                <span className="text-xs font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-full flex-shrink-0">{review.category}</span>
               </div>
-              <p className="text-gray-600 text-sm leading-relaxed mb-6">"{text}"</p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold">
-                  {name[0]}
+              <p className="text-gray-600 text-sm leading-relaxed flex-1">"{locale === 'fr' ? review.text_fr : review.text_en}"</p>
+              <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-sm flex-shrink-0">
+                    {review.clientName[0]}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{review.clientName}</p>
+                    <p className="text-xs text-gray-400">{review.location}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{name}</p>
-                  <p className="text-xs text-gray-400">{role}</p>
-                </div>
+                <p className="text-xs text-gray-400 text-right">{t('landingReviews_artisanLabel')}<br /><span className="text-gray-600 font-medium">{review.artisanName}</span></p>
               </div>
             </div>
           ))}
@@ -499,7 +518,7 @@ export function Landing() {
       <HowItWorks />
       <Categories />
       <Features />
-      <Testimonials />
+      <CategoryReviews />
       <CTA />
       <Footer />
     </div>

@@ -117,7 +117,13 @@ function timeAgo(iso: string, locale: string): string {
   return `${mins}min ago`;
 }
 
-const CONTACT_COST = 1;
+const CONTACT_COST = 1; // lower cost — artisan-initiated (Rule #1)
+
+// ── Idempotency helpers ───────────────────────────────────────────────────────
+// Prevents double-deduction if artisan clicks "Contact Client" twice for the same job.
+function contactedKey(jobId: string) { return `artisan_contacted_${jobId}`; }
+function wasContacted(jobId: string) { return !!localStorage.getItem(contactedKey(jobId)); }
+function markContacted(jobId: string) { localStorage.setItem(contactedKey(jobId), '1'); }
 
 function InsufficientModal({ onClose, onBuy, locale }: { onClose: () => void; onBuy: () => void; locale: string }) {
   return (
@@ -159,6 +165,10 @@ export function BrowseJobs() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [showModal, setShowModal] = useState(false);
+  // Track contacted jobs in component state so button updates immediately
+  const [contactedJobs, setContactedJobs] = useState<Set<string>>(
+    () => new Set(MOCK_JOBS.filter((j) => wasContacted(j.id)).map((j) => j.id))
+  );
 
   const filtered = MOCK_JOBS.filter((j) => {
     const q = search.toLowerCase();
@@ -168,18 +178,29 @@ export function BrowseJobs() {
   });
 
   const handleContact = (job: MockJob) => {
-    if (balance < CONTACT_COST) {
-      setShowModal(true);
+    const navToMessages = () =>
+      navigate('/dashboard/worker/messages', {
+        state: {
+          pendingContact: { id: job.client.id, name: job.client.name },
+          jobTitle: job.title,
+          // Artisan-initiated → conversation is active immediately (no acceptance step for client)
+          convStatus: 'active',
+        },
+      });
+
+    // Idempotency: already contacted this job in a previous click — just reopen the thread
+    if (wasContacted(job.id)) {
+      navToMessages();
       return;
     }
+
+    if (balance < CONTACT_COST) { setShowModal(true); return; }
     const ok = deduct(CONTACT_COST, `Contact client — ${job.title}`);
     if (!ok) { setShowModal(true); return; }
-    navigate('/dashboard/worker/messages', {
-      state: {
-        pendingContact: { id: job.client.id, name: job.client.name },
-        jobTitle: job.title,
-      },
-    });
+
+    markContacted(job.id);
+    setContactedJobs((prev) => new Set([...prev, job.id]));
+    navToMessages();
   };
 
   return (
@@ -281,13 +302,17 @@ export function BrowseJobs() {
                     size="sm"
                     onClick={() => handleContact(job)}
                     className="flex items-center gap-1.5 whitespace-nowrap"
-                    variant={balance < CONTACT_COST ? 'outline' : 'primary'}
+                    variant={contactedJobs.has(job.id) ? 'outline' : balance < CONTACT_COST ? 'outline' : 'primary'}
                   >
                     <MessageSquare size={14} />
-                    {t('contactClient')}
-                    <span className="ml-1 flex items-center gap-0.5 text-xs opacity-75">
-                      <Coins size={11} />1
-                    </span>
+                    {contactedJobs.has(job.id)
+                      ? (locale === 'fr' ? 'Voir la conversation' : 'View conversation')
+                      : t('contactClient')}
+                    {!contactedJobs.has(job.id) && (
+                      <span className="ml-1 flex items-center gap-0.5 text-xs opacity-75">
+                        <Coins size={11} />1
+                      </span>
+                    )}
                   </Button>
                 </div>
               </div>

@@ -6,7 +6,14 @@ import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LangContext';
 import { useToast } from '../../components/ui/Toast';
-import { authApi } from '../../lib/apiService';
+// Mock auth API for demo — replace with real authApi when backend is live
+const authApi = {
+  sendOTP: async (_phone: string) => { await new Promise((r) => setTimeout(r, 800)); },
+  verifyOTP: async (_phone: string, _code: string) => {
+    await new Promise((r) => setTimeout(r, 800));
+    // Accept any 6-digit code for demo
+  },
+};
 
 export function VerifyPhone() {
   const { user } = useAuth();

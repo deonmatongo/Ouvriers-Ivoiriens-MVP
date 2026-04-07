@@ -23,6 +23,36 @@ const TokenContext = createContext<TokenContextType | null>(null);
 function balanceKey(userId: string) { return `tokens_balance_${userId}`; }
 function txnKey(userId: string) { return `tokens_txns_${userId}`; }
 
+const DEMO_SEED: Record<string, { balance: number; reasons: string[] }> = {
+  'mock-artisan-1': {
+    balance: 35,
+    reasons: [
+      'Achat pack Pro — 50 crédits',
+      'Acceptation demande — Réparation tableau électrique',
+      'Contact client — Installation prise terrasse',
+      'Acceptation demande — Mise aux normes installation',
+    ],
+  },
+};
+
+function seedDemoBalance(userId: string) {
+  const seed = DEMO_SEED[userId];
+  if (!seed) return;
+  const alreadySeeded = localStorage.getItem(`tokens_seeded_${userId}`);
+  if (alreadySeeded) return;
+  writeBalance(userId, seed.balance);
+  const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
+  const seedTxns: TokenTransaction[] = [
+    { id: 'seed-t1', type: 'credit', amount: 50, reason: seed.reasons[0], created_at: daysAgo(10) },
+    { id: 'seed-t2', type: 'debit',  amount: 5,  reason: seed.reasons[1], created_at: daysAgo(8) },
+    { id: 'seed-t3', type: 'debit',  amount: 1,  reason: seed.reasons[2], created_at: daysAgo(5) },
+    { id: 'seed-t4', type: 'debit',  amount: 5,  reason: seed.reasons[3], created_at: daysAgo(3) },
+    { id: 'seed-t5', type: 'credit', amount: 0,  reason: '← Solde de départ: 35 crédits', created_at: daysAgo(10) },
+  ];
+  localStorage.setItem(txnKey(userId), JSON.stringify(seedTxns));
+  localStorage.setItem(`tokens_seeded_${userId}`, '1');
+}
+
 function readBalance(userId: string): number {
   return Number(localStorage.getItem(balanceKey(userId)) ?? 0);
 }
@@ -49,7 +79,11 @@ export function TokenProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const uid = user?.id ?? '';
 
-  const [balance, setBalance] = useState<number>(() => (uid ? readBalance(uid) : 0));
+  const [balance, setBalance] = useState<number>(() => {
+    if (!uid) return 0;
+    seedDemoBalance(uid);
+    return readBalance(uid);
+  });
   const [transactions, setTransactions] = useState<TokenTransaction[]>(() => (uid ? readTxns(uid) : []));
 
   const refresh = useCallback(() => {
