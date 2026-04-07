@@ -1,4 +1,5 @@
-import { Briefcase, Clock, CheckCircle, PlusCircle, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
+import { Briefcase, Clock, CheckCircle, PlusCircle, ArrowRight, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CustomerLayout } from '../../components/layout/CustomerLayout';
 import { Card, CardBody } from '../../components/ui/Card';
@@ -11,16 +12,23 @@ import { useLang } from '../../context/LangContext';
 import { useJobs, useJobStats } from '../../hooks/useJobs';
 import { formatDate, formatCurrency } from '../../lib/utils';
 
+const COMPLETED_JOBS = ['mj4']; // mock completed job IDs
+
 export function CustomerDashboard() {
   const { user } = useAuth();
-  const { t } = useLang();
+  const { t, locale } = useLang();
+
+  const [reviewedJobs] = useState<Set<string>>(
+    () => new Set(COMPLETED_JOBS.filter(id => !!localStorage.getItem(`reviewed_${id}`)))
+  );
+  const pendingReviewJobs = COMPLETED_JOBS.filter(id => !reviewedJobs.has(id));
   const { active, pending, completed, isLoading: statsLoading } = useJobStats();
   const { data: jobs = [], isLoading: jobsLoading } = useJobs({ limit: 5 });
 
   const stats = [
-    { label: t('statActiveJobs'),    value: active,    icon: Briefcase,    color: 'text-blue-600',   bg: 'bg-blue-50' },
-    { label: t('statPendingQuotes'), value: pending,   icon: Clock,        color: 'text-yellow-600', bg: 'bg-yellow-50' },
-    { label: t('statCompleted'),     value: completed, icon: CheckCircle,  color: 'text-green-600',  bg: 'bg-green-50' },
+    { label: t('statActiveJobs'),    value: active,    icon: Briefcase,    color: 'text-blue-600',   bg: 'bg-blue-50',    filter: 'active' },
+    { label: t('statPendingQuotes'), value: pending,   icon: Clock,        color: 'text-yellow-600', bg: 'bg-yellow-50',  filter: 'quoted' },
+    { label: t('statCompleted'),     value: completed, icon: CheckCircle,  color: 'text-green-600',  bg: 'bg-green-50',   filter: 'completed' },
   ];
 
   const statusMap: Record<string, { label: string; variant: 'info' | 'warning' | 'success' | 'default' }> = {
@@ -51,18 +59,51 @@ export function CustomerDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {statsLoading
           ? Array.from({ length: 3 }).map((_, i) => <StatCardSkeleton key={i} />)
-          : stats.map(({ label, value, icon: Icon, color, bg }) => (
-              <Card key={label}>
-                <CardBody className="flex items-center gap-4">
-                  <div className={`p-3 rounded-xl ${bg}`}><Icon size={20} className={color} /></div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{value}</p>
-                    <p className="text-sm text-gray-500">{label}</p>
-                  </div>
-                </CardBody>
-              </Card>
+          : stats.map(({ label, value, icon: Icon, color, bg, filter }) => (
+              <Link key={label} to={`/dashboard/customer/jobs?status=${filter}`} className="block group">
+                <Card className="transition hover:shadow-md hover:border-gray-200 cursor-pointer">
+                  <CardBody className="flex items-center gap-4">
+                    <div className={`p-3 rounded-xl ${bg}`}><Icon size={20} className={color} /></div>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900">{value}</p>
+                      <p className="text-sm text-gray-500">{label}</p>
+                    </div>
+                  </CardBody>
+                </Card>
+              </Link>
             ))}
       </div>
+
+      {/* Pending review nudge */}
+      {pendingReviewJobs.length > 0 && (
+        <Card className="mb-6 border-amber-200 bg-amber-50">
+          <CardBody>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 rounded-xl">
+                  <Star size={18} className="text-amber-500 fill-amber-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-amber-900">
+                    {locale === 'fr'
+                      ? `${pendingReviewJobs.length} travail${pendingReviewJobs.length > 1 ? 'x' : ''} à noter`
+                      : `${pendingReviewJobs.length} completed job${pendingReviewJobs.length > 1 ? 's' : ''} to review`}
+                  </p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    {locale === 'fr'
+                      ? 'Partagez votre expérience pour aider la communauté'
+                      : 'Share your experience to help the community'}
+                  </p>
+                </div>
+              </div>
+              <Link to="/dashboard/customer/jobs" className="text-xs font-semibold text-amber-700 hover:text-amber-800 whitespace-nowrap flex items-center gap-1">
+                {locale === 'fr' ? 'Laisser un avis' : 'Leave reviews'}
+                <ArrowRight size={12} />
+              </Link>
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       {/* Recent jobs */}
       <Card>
